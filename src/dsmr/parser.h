@@ -86,6 +86,8 @@ namespace dsmr
     bool all_present_inlined() { return true; }
   };
 
+  static const char DUPLICATE_FIELD_ERROR[] PROGMEM = "Duplicate field";
+
   /**
  * General case: At least one typename is passed.
  */
@@ -114,7 +116,7 @@ namespace dsmr
       if (id == T::id)
       {
         if (T::present())
-          return ParseResult<void>().fail(F("Duplicate field"), str);
+          return ParseResult<void>().fail(reinterpret_cast<const __FlashStringHelper*>(DUPLICATE_FIELD_ERROR), str);
         T::present() = true;
         return T::parse(str, end);
       }
