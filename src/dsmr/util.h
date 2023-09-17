@@ -114,10 +114,10 @@ namespace dsmr
   struct ParseResult : public _ParseResult<ParseResult<T>, T>
   {
     const char *next = NULL;
-    const char *err = NULL;
+    const __FlashStringHelper *err = NULL;
     const char *ctx = NULL;
 
-    ParseResult &fail(const char *err, const char *ctx = NULL)
+    ParseResult &fail(const __FlashStringHelper *err, const char *ctx = NULL)
     {
       this->err = err;
       this->ctx = ctx;
