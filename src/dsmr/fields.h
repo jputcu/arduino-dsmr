@@ -255,7 +255,7 @@ namespace dsmr
 #define DEFINE_FIELD(fieldname, value_t, obis, field_t, field_args...) \
   struct fieldname : field_t<fieldname, ##field_args>                  \
   {                                                                    \
-    value_t fieldname;                                                 \
+    value_t fieldname {};                                              \
     bool fieldname##_present = false;                                  \
     static constexpr ObisId id = obis;                                 \
     static constexpr char name[] = #fieldname;                         \
