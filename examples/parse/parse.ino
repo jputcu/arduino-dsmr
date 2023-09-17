@@ -144,7 +144,7 @@ void setup()
   Serial.begin(115200);
 
   MyData data;
-  ParseResult<void> res = P1Parser::parse(&data, raw, lengthof(raw), true);
+  ParseResult<void> res = P1Parser::parse(data, raw, lengthof(raw), true);
   if (res.err)
   {
     // Parsing error, show it

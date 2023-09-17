@@ -150,7 +150,7 @@ void loop()
   {
     MyData data;
     String err;
-    if (reader.parse(&data, &err))
+    if (reader.parse(data, &err))
     {
       // Parse succesful, print result
       data.applyEach(Printer());

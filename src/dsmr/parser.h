@@ -320,7 +320,7 @@ namespace dsmr
    * pointer in the result will indicate the next unprocessed byte.
    */
     template <typename... Ts>
-    static ParseResult<void> parse(ParsedData<Ts...> *data, const char *str, size_t n, bool unknown_error = false,
+    static ParseResult<void> parse(ParsedData<Ts...> &data, const char *str, size_t n, bool unknown_error = false,
                                    bool check_crc = true)
     {
       ParseResult<void> res;
@@ -377,7 +377,7 @@ namespace dsmr
    * checksum. Does not verify the checksum.
    */
     template <typename... Ts>
-    static ParseResult<void> parse_data(ParsedData<Ts...> *data, const char *str, const char *end,
+    static ParseResult<void> parse_data(ParsedData<Ts...> &data, const char *str, const char *end,
                                         bool unknown_error = false)
     {
       ParseResult<void> res;
@@ -403,7 +403,7 @@ namespace dsmr
             return res.fail(F("Invalid identification string"), line_start);
           // Offer it for processing using the all-ones Obis ID, which
           // is not otherwise valid.
-          ParseResult<void> tmp = data->parse_line(ObisId(255, 255, 255, 255, 255, 255), line_start, line_end);
+          ParseResult<void> tmp = data.parse_line(ObisId(255, 255, 255, 255, 255, 255), line_start, line_end);
           if (tmp.err)
             return tmp;
           line_start = ++line_end;
@@ -432,7 +432,7 @@ namespace dsmr
     }
 
     template <typename Data>
-    static ParseResult<void> parse_line(Data *data, const char *line, const char *end, bool unknown_error)
+    static ParseResult<void> parse_line(Data &data, const char *line, const char *end, bool unknown_error)
     {
       ParseResult<void> res;
       if (line == end)
@@ -442,7 +442,7 @@ namespace dsmr
       if (idres.err)
         return idres;
 
-      ParseResult<void> datares = data->parse_line(idres.result, idres.next, end);
+      ParseResult<void> datares = data.parse_line(idres.result, idres.next, end);
       if (datares.err)
         return datares;
 

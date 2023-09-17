@@ -33,7 +33,7 @@ void setup() {
   Serial.begin(115200);
 
   MyData data;
-  ParseResult<void> res = P1Parser::parse(&data, msg, lengthof(msg));
+  ParseResult<void> res = P1Parser::parse(data, msg, lengthof(msg));
   if (res.err) {
     // Parsing error, show it
     Serial.println(res.fullError(msg, msg + lengthof(msg)));

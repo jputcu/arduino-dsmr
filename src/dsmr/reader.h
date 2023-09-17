@@ -214,7 +214,7 @@ namespace dsmr
      * message is appended to that string.
      */
     template <typename... Ts>
-    bool parse(ParsedData<Ts...> *data, String *err)
+    bool parse(ParsedData<Ts...> &data, String *err)
     {
       const char *str = buffer.c_str(), *end = buffer.c_str() + buffer.length();
       ParseResult<void> res = P1Parser::parse_data(data, str, end);
