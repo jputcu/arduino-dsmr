@@ -71,7 +71,7 @@ namespace dsmr
      * output, the Stream is assumed to be already set up (e.g. baud
      * rate configured).
      */
-    P1Reader(Stream *stream, uint8_t req_pin)
+    P1Reader(Stream &stream, uint8_t req_pin)
         : stream(stream), req_pin(req_pin), once(false), state(State::DISABLED_STATE)
     {
       pinMode(req_pin, OUTPUT);
@@ -105,7 +105,7 @@ namespace dsmr
       if (!this->_available)
         this->buffer = "";
       // Clear any pending bytes
-      while (this->stream->read() >= 0) /* nothing */
+      while (this->stream.read() >= 0) /* nothing */
         ;
     }
 
@@ -131,12 +131,12 @@ namespace dsmr
         {
           // Let the Stream buffer the CRC bytes. Convert to size_t to
           // prevent unsigned vs signed comparison
-          if ((size_t)this->stream->available() < CrcParser::CRC_LEN)
+          if ((size_t)this->stream.available() < CrcParser::CRC_LEN)
             return false;
 
           char buf[CrcParser::CRC_LEN];
           for (uint8_t i = 0; i < CrcParser::CRC_LEN; ++i)
-            buf[i] = this->stream->read();
+            buf[i] = this->stream.read();
 
           ParseResult<uint16_t> crc = CrcParser::parse(buf, buf + lengthof(buf));
 
@@ -157,7 +157,7 @@ namespace dsmr
         else
         {
           // For other states, read bytes one by one
-          int c = this->stream->read();
+          int c = this->stream.read();
           if (c < 0)
             return false;
 
@@ -241,7 +241,7 @@ namespace dsmr
     }
 
   protected:
-    Stream *stream;
+    Stream &stream;
     uint8_t req_pin;
     enum class State : uint8_t
     {

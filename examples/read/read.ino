@@ -114,7 +114,7 @@ struct Printer
 // Create Serial1 connected to UART 1
 HardwareSerial Serial1(1);
 #endif
-P1Reader reader(&Serial1, 2);
+P1Reader reader(Serial1, 2);
 
 unsigned long last;
 
