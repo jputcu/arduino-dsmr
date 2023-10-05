@@ -30,6 +30,7 @@
 
 #include "fields.h"
 
+
 using namespace dsmr;
 using namespace dsmr::fields;
 
@@ -365,8 +366,8 @@ constexpr ObisId gas_valve_position::id;
 constexpr char gas_valve_position::name[];
 
 /* _NL */
-constexpr ObisId gas_delivered::id;
-constexpr char gas_delivered::name[];
+//constexpr ObisId gas_delivered::id;
+//constexpr char gas_delivered::name[];
 
 /* _BE */
 constexpr ObisId gas_delivered_be::id;

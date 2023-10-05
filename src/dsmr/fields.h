@@ -258,7 +258,7 @@ namespace dsmr
     value_t fieldname {};                                              \
     bool fieldname##_present = false;                                  \
     static constexpr ObisId id = obis;                                 \
-    static constexpr char name[] = #fieldname;                         \
+    static constexpr char name[] PROGMEM = #fieldname;                 \
     value_t &val() { return fieldname; }                               \
     bool &present() { return fieldname##_present; }                    \
   }

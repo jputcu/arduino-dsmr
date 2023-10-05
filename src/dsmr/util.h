@@ -84,6 +84,28 @@ namespace dsmr
  * probably way longer that needed.
  */
 
+  enum Error : uint8_t {
+      na,
+      duplicate_field,
+      missing_opening_bracket,
+      missing_closing_bracket,
+      invalid_string_length,
+      invalid_number,
+      missing_unit,
+      invalid_unit,
+      extra_data,
+      no_checksum_found,
+      obis_id_over_255,
+      obis_id_empty,
+      incomplete_or_malformed_checksum,
+      data_should_start_with_slash,
+      checksum_mismatch,
+      invalid_id_string,
+      last_dataline_not_crlf_terminated,
+      trailing_char_on_data_line,
+      unknown_field
+  };
+
   // Superclass for ParseResult so we can specialize for void without
   // having to duplicate all content
   template <typename P, typename T>
@@ -114,10 +136,53 @@ namespace dsmr
   struct ParseResult : public _ParseResult<ParseResult<T>, T>
   {
     const char *next = NULL;
-    const __FlashStringHelper *err = NULL;
+    Error err = Error::na;
     const char *ctx = NULL;
 
-    ParseResult &fail(const __FlashStringHelper *err, const char *ctx = NULL)
+    static const __FlashStringHelper *ToErrString(Error err) {
+        switch(err) {
+            case Error::duplicate_field:
+                return F("Duplicate field");
+            case Error::missing_opening_bracket:
+                return F("Missing (");
+            case Error::missing_closing_bracket:
+                return F("Missing )");
+            case Error::invalid_string_length:
+                return F("Invalid string length");
+            case Error::invalid_number:
+                return F("Invalid number");
+            case Error::missing_unit:
+                return F("Missing unit");
+            case Error::invalid_unit:
+                return F("Invalid unit");
+            case Error::extra_data:
+                return F("Extra data");
+            case Error::no_checksum_found:
+                return F("No checksum found");
+            case Error::obis_id_over_255:
+                return F("Obis ID has number over 255");
+            case Error::obis_id_empty:
+                return F("OBIS id Empty");
+            case Error::incomplete_or_malformed_checksum:
+                return F("Incomplete or malformed checksum");
+            case Error::data_should_start_with_slash:
+                return F("Data should start with /");
+            case Error::checksum_mismatch:
+                return F("Checksum mismatch");
+            case Error::invalid_id_string:
+                return F("Invalid identification string");
+            case Error::last_dataline_not_crlf_terminated:
+                return F("Last dataline not CRLF terminated");
+            case Error::trailing_char_on_data_line:
+                return F("Trailing characters on data line");
+            case Error::unknown_field:
+                return F("Unknown field");
+            default:
+                return F("?");
+        }
+    }
+
+    ParseResult &fail(Error err, const char *ctx = NULL)
     {
       this->err = err;
       this->ctx = ctx;
@@ -167,7 +232,7 @@ namespace dsmr
         res += '^';
         res += "\r\n";
       }
-      res += this->err;
+      res += ToErrString(this->err);
       return res;
     }
   };
