@@ -135,8 +135,8 @@ namespace dsmr
             return false;
 
           char buf[CrcParser::CRC_LEN];
-          for (uint8_t i = 0; i < CrcParser::CRC_LEN; ++i)
-            buf[i] = this->stream.read();
+          for (auto &c : buf)
+            c = static_cast<char>(this->stream.read());
 
           ParseResult<uint16_t> crc = CrcParser::parse(buf, buf + lengthof(buf));
 
