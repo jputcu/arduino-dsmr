@@ -138,12 +138,12 @@ namespace dsmr
           for (auto &c : buf)
             c = static_cast<char>(this->stream.read());
 
-          ParseResult<uint16_t> crc = CrcParser::parse(buf, buf + lengthof(buf));
+          const auto rcvd_crc = CrcParser::parse(buf, buf + lengthof(buf));
 
           // Prepare for next message
           state = State::WAITING_STATE;
 
-          if (!crc.err && crc.result == this->crc)
+          if (!rcvd_crc.err && rcvd_crc.result == this->crc)
           {
             // Message complete, checksum correct
             this->_available = true;
@@ -157,12 +157,21 @@ namespace dsmr
         else
         {
           // For other states, read bytes one by one
-          int c = this->stream.read();
-          if (c < 0)
+          auto c_i = this->stream.read();
+          if (c_i < 0)
             return false;
+          auto c = static_cast<char>(c_i);
 
           switch (this->state)
           {
+          case State::READING_STATE:
+            // Include the ! in the CRC
+            this->crc = _crc16_update(this->crc, c);
+            if (c != '!')
+              buffer += c;
+            else
+              this->state = State::CHECKSUM_STATE;
+            break;
           case State::DISABLED_STATE:
             // Where did this byte come from? Just toss it
             break;
@@ -174,15 +183,6 @@ namespace dsmr
               this->crc = _crc16_update(0, c);
               this->clear();
             }
-            break;
-          case State::READING_STATE:
-            // Include the ! in the CRC
-            this->crc = _crc16_update(this->crc, c);
-            if (c == '!')
-              this->state = State::CHECKSUM_STATE;
-            else
-              buffer.concat((char)c);
-
             break;
           case State::CHECKSUM_STATE:
             // This cannot happen (given the surrounding if), but the
