@@ -61,6 +61,7 @@ namespace dsmr
  * partial message is discarded. Any bytes received while disabled are
  * dropped.
  */
+ template<size_t RX_BUF_SIZE>
   class P1Reader
   {
   public:
@@ -72,7 +73,7 @@ namespace dsmr
      * rate configured).
      */
     P1Reader(Stream &stream, uint8_t req_pin)
-        : stream(stream), req_pin(req_pin), once(false), state(State::DISABLED_STATE)
+        : stream(stream), req_pin(req_pin)
     {
       pinMode(req_pin, OUTPUT);
       digitalWrite(req_pin, LOW);
@@ -89,8 +90,8 @@ namespace dsmr
     void enable(bool once)
     {
       digitalWrite(this->req_pin, HIGH);
-      this->state = State::WAITING_STATE;
-      this->once = once;
+      m_state = State::waiting;
+      m_once = once;
     }
 
     /* Disable the request pin again, to stop data from being sent on
@@ -101,9 +102,9 @@ namespace dsmr
     void disable()
     {
       digitalWrite(this->req_pin, LOW);
-      this->state = State::DISABLED_STATE;
-      if (!this->_available)
-        this->buffer = "";
+      m_state = State::disabled;
+      if (!this->m_msg)
+        this->m_write_ptr = m_buffer;
       // Clear any pending bytes
       while (this->stream.read() >= 0) /* nothing */
         ;
@@ -115,7 +116,7 @@ namespace dsmr
      */
     bool available()
     {
-      return this->_available;
+      return this->m_msg;
     }
 
     /**
@@ -127,7 +128,7 @@ namespace dsmr
     {
       while (true)
       {
-        if (state == State::CHECKSUM_STATE)
+        if (m_state == State::checksum)
         {
           // Let the Stream buffer the CRC bytes. Convert to size_t to
           // prevent unsigned vs signed comparison
@@ -141,14 +142,15 @@ namespace dsmr
           const auto rcvd_crc = CrcParser::parse(buf, buf + lengthof(buf));
 
           // Prepare for next message
-          state = State::WAITING_STATE;
+          m_state = State::waiting;
 
-          if (!rcvd_crc.err && rcvd_crc.result == this->crc)
+          if (!rcvd_crc.err && (rcvd_crc.result == m_calc_crc))
           {
             // Message complete, checksum correct
-            this->_available = true;
+            *this->m_write_ptr++ = '\0';
+            this->m_msg = m_buffer;
 
-            if (once)
+            if (m_once)
               this->disable();
 
             return true;
@@ -162,34 +164,24 @@ namespace dsmr
             return false;
           auto c = static_cast<char>(c_i);
 
-          switch (this->state)
-          {
-          case State::READING_STATE:
+          if( m_state == State::reading ) {
             // Include the ! in the CRC
-            this->crc = _crc16_update(this->crc, c);
-            if (c != '!')
-              buffer += c;
-            else
-              this->state = State::CHECKSUM_STATE;
-            break;
-          case State::DISABLED_STATE:
-            // Where did this byte come from? Just toss it
-            break;
-          case State::WAITING_STATE:
+            m_calc_crc = _crc16_update(m_calc_crc, c);
+            if (c != '!') {
+              if (!IsFull())
+                *m_write_ptr++ = c;
+              else
+                m_state = State::waiting; // safe state
+            } else
+              m_state = State::checksum;
+          } else if( m_state == State::waiting ) {
             if (c == '/')
             {
-              this->state = State::READING_STATE;
+              m_state = State::reading;
               // Include the / in the CRC
-              this->crc = _crc16_update(0, c);
+              m_calc_crc = _crc16_update(0, c);
               this->clear();
             }
-            break;
-          case State::CHECKSUM_STATE:
-            // This cannot happen (given the surrounding if), but the
-            // compiler is not smart enough to see this, so list this
-            // case to prevent a warning.
-            abort();
-            break;
           }
         }
       }
@@ -199,10 +191,12 @@ namespace dsmr
     /**
      * Returns the data read so far.
      */
-    const String &raw()
+    const char* raw()
     {
-      return buffer;
+      return m_buffer;
     }
+
+    bool IsFull() const { return m_write_ptr == m_buffer + RX_BUF_SIZE; }
 
     /**
      * If a complete message has been received, parse it and store the
@@ -216,11 +210,14 @@ namespace dsmr
     template <typename... Ts>
     ParseResult<void> parse(ParsedData<Ts...> &data, String *err)
     {
-      const char *str = buffer.c_str(), *end = buffer.c_str() + buffer.length();
-      ParseResult<void> res = P1Parser::parse_data(data, str, end);
+      ParseResult<void> res;
+      if( !IsFull() )
+        res = P1Parser::parse_data(data, m_buffer, m_write_ptr);
+      else
+        res.fail(Error::buffer_overflow);
 
       if (res.err && err)
-        *err = res.fullError(str, end);
+        *err = res.fullError(m_buffer, m_write_ptr);
 
       // Clear the message
       this->clear();
@@ -233,11 +230,8 @@ namespace dsmr
      */
     void clear()
     {
-      if (_available)
-      {
-        buffer = "";
-        _available = false;
-      }
+      m_write_ptr = m_buffer;
+      m_msg = nullptr;
     }
 
   protected:
@@ -245,16 +239,17 @@ namespace dsmr
     uint8_t req_pin;
     enum class State : uint8_t
     {
-      DISABLED_STATE,
-      WAITING_STATE,
-      READING_STATE,
-      CHECKSUM_STATE,
+      disabled,
+      waiting,
+      reading,
+      checksum,
     };
-    bool _available;
-    bool once;
-    State state;
-    String buffer;
-    uint16_t crc;
+    bool m_once = false;
+    State m_state = State::disabled;
+    char m_buffer[RX_BUF_SIZE];
+    char* m_write_ptr = m_buffer;
+    const char* m_msg = nullptr;
+    uint16_t m_calc_crc;
   };
 
 } // namespace dsmr

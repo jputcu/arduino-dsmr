@@ -284,7 +284,7 @@ namespace dsmr
   {
     static const size_t CRC_LEN = 4;
 
-    // Parse a crc value. str must point to the first of the four hex
+    // Parse a m_calc_crc value. str must point to the first of the four hex
     // bytes in the CRC.
     static ParseResult<uint16_t> parse(const char *str, const char *end)
     {

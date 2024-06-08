@@ -39,7 +39,7 @@ namespace dsmr
  * Small utility to get the length of an array at compiletime.
  */
   template <typename T, unsigned int sz>
-  inline unsigned int lengthof(const T (&)[sz]) { return sz; }
+  constexpr size_t lengthof(const T (&)[sz]) { return sz; }
 
   // Hack until https://github.com/arduino/Arduino/pull/1936 is merged.
   // This appends the given number of bytes from the given C string to the
@@ -86,6 +86,7 @@ namespace dsmr
 
   enum Error : uint8_t {
       na,
+      buffer_overflow,
       duplicate_field,
       missing_opening_bracket,
       missing_closing_bracket,
